@@ -1,0 +1,9 @@
+{
+  "device_name": "emulator-5554",
+  "adb_path": "E:\\MuMuPlayer-12.0\\shell\\adb.exe",
+  "mumu_path": "E:\\MuMuPlayer-12.0\\nx_device\\12.0\\shell\\MuMuNxDevice.exe",
+  "mumu_index": 0,
+  "connection_timeout": 30,
+  "retry_times": 3,
+  "screenshot_path": "cache/screenshot.png"
+}

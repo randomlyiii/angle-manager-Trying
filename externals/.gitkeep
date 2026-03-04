@@ -1,0 +1,3 @@
+# 外部依赖目录
+# 存放ADB工具包、识别模型、第三方依赖组件
+# 请将platform-tools放置在externals/adb/目录下
