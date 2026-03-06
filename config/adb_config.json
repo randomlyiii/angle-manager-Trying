@@ -2,5 +2,7 @@
   "adb_path": "E:\\MuMuPlayer-12.0\\shell\\adb.exe",
   "mumu_path": "E:\\MuMuPlayer-12.0\\nx_device\\12.0\\shell\\MuMuNxDevice.exe",
   "mumu_index": 0,
-  "connection_timeout": 30
+  "connection_timeout": 30,
+  "emulator_start_timeout": 90,
+  "emulator_start_check_interval": 3
 }

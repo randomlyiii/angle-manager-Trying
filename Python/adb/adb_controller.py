@@ -64,9 +64,9 @@ class ADBController:
                            stderr=subprocess.DEVNULL)
             print("模拟器启动命令已发送，等待模拟器启动...")
             
-            # 等待模拟器启动（最多等待90秒）
-            max_wait = 90
-            wait_interval = 3
+            # 从配置读取等待时间
+            max_wait = self.config.get("emulator_start_timeout", 90)
+            wait_interval = self.config.get("emulator_start_check_interval", 3)
             elapsed = 0
             
             while elapsed < max_wait:
@@ -193,3 +193,34 @@ class ADBController:
             width, height = map(int, size_str.split('x'))
             return width, height
         return None, None
+    
+    def run(self):
+        """运行完整的启动和连接流程"""
+        print("=" * 50)
+        print("ADB模拟器自动连接工具")
+        print("=" * 50)
+        
+        print("\n[1/2] 初始化ADB控制器...")
+        print("[2/2] 检查并启动MuMu模拟器...")
+        
+        if not self.start_emulator():
+            print("警告: 模拟器启动失败，尝试连接现有设备...")
+        
+        print("\n连接设备...")
+        if not self.connect():
+            print("\n错误: 无法连接到设备，请检查:")
+            print("  - MuMu模拟器是否已启动")
+            print("  - ADB工具是否正确配置")
+            print("  - config/adb_config.json中的配置是否正确")
+            return False
+        
+        print("\n✓ 设备连接成功!")
+        
+        width, height = self.get_screen_size()
+        if width and height:
+            print(f"✓ 屏幕尺寸: {width}x{height}")
+        
+        print("\n" + "=" * 50)
+        print("模拟器已就绪")
+        print("=" * 50)
+        return True

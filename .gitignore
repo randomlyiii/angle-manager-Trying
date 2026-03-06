@@ -3,7 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# 配置文件（包含个人路径）
+# 配置文件
 config/adb_config.json
 
 # IDE
