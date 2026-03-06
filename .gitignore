@@ -2,35 +2,13 @@
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-.Python
-env/
-venv/
-ENV/
-build/
-dist/
-*.egg-info/
 
-# 项目特定
-cache/*
-!cache/.gitkeep
-data/*
-!data/.gitkeep
-debug/*
-!debug/.gitkeep
-externals/*
-!externals/.gitkeep
+# 配置文件（包含个人路径）
+config/adb_config.json
 
 # IDE
 .vscode/
 .idea/
-*.swp
-*.swo
-*~
 
 # 日志
 *.log
-
-# 临时文件
-*.tmp
-*.bak

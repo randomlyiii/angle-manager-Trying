@@ -13,8 +13,6 @@ class ADBController:
         self.adb_path = self.config.get("adb_path", "adb")
         self.mumu_path = self.config.get("mumu_path", "")
         self.mumu_index = self.config.get("mumu_index", 0)
-        self.device_name = self.config.get("device_name", "")
-        self.screenshot_path = self.config.get("screenshot_path", "cache/screenshot.png")
         
     def _load_config(self, config_path):
         """加载配置文件"""
@@ -165,60 +163,29 @@ class ADBController:
     
     def wake_device(self):
         """唤醒设备屏幕"""
-        device_arg = f"-s {self.device_name}" if self.device_name else ""
-        
         # 检查屏幕状态
-        cmd = f'"{self.adb_path}" {device_arg} shell dumpsys power | findstr "mWakefulness"'
+        cmd = f'"{self.adb_path}" shell dumpsys power | findstr "mWakefulness"'
         success, stdout, _ = self._execute_command(cmd)
         
         # 如果屏幕是休眠状态，则唤醒
         if success and ("Asleep" in stdout or "Dozing" in stdout):
             print("检测到设备休眠，正在唤醒...")
             # 按电源键唤醒
-            cmd = f'"{self.adb_path}" {device_arg} shell input keyevent KEYCODE_WAKEUP'
+            cmd = f'"{self.adb_path}" shell input keyevent KEYCODE_WAKEUP'
             self._execute_command(cmd)
             time.sleep(1)
             
             # 滑动解锁（如果有锁屏）
-            cmd = f'"{self.adb_path}" {device_arg} shell input swipe 500 1000 500 300'
+            cmd = f'"{self.adb_path}" shell input swipe 500 1000 500 300'
             self._execute_command(cmd)
             time.sleep(0.5)
             print("设备已唤醒")
         else:
             print("设备屏幕已激活")
     
-    def screenshot(self, save_path=None):
-        """截取屏幕"""
-        if save_path is None:
-            save_path = self.screenshot_path
-        
-        Path(save_path).parent.mkdir(parents=True, exist_ok=True)
-        
-        device_arg = f"-s {self.device_name}" if self.device_name else ""
-        cmd = f'"{self.adb_path}" {device_arg} exec-out screencap -p > "{save_path}"'
-        
-        success, _, _ = self._execute_command(cmd)
-        return success and os.path.exists(save_path)
-    
-    def tap(self, x, y):
-        """点击指定坐标"""
-        device_arg = f"-s {self.device_name}" if self.device_name else ""
-        cmd = f'"{self.adb_path}" {device_arg} shell input tap {x} {y}'
-        success, _, _ = self._execute_command(cmd)
-        time.sleep(self.config.get("click_delay", 0.5))
-        return success
-    
-    def swipe(self, x1, y1, x2, y2, duration=300):
-        """滑动操作"""
-        device_arg = f"-s {self.device_name}" if self.device_name else ""
-        cmd = f'"{self.adb_path}" {device_arg} shell input swipe {x1} {y1} {x2} {y2} {duration}'
-        success, _, _ = self._execute_command(cmd)
-        return success
-    
     def get_screen_size(self):
         """获取屏幕尺寸"""
-        device_arg = f"-s {self.device_name}" if self.device_name else ""
-        cmd = f'"{self.adb_path}" {device_arg} shell wm size'
+        cmd = f'"{self.adb_path}" shell wm size'
         success, stdout, _ = self._execute_command(cmd)
         
         if success and "Physical size:" in stdout:

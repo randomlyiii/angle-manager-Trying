@@ -1,6 +1,0 @@
-{
-  "template_match_threshold": 0.8,
-  "ocr_language": "chi_sim",
-  "template_dir": "resource/templates",
-  "cache_enabled": true
-}
