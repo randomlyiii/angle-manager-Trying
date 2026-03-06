@@ -1,6 +1,7 @@
 """ADB模拟器自动连接工具"""
 from adb.adb_controller import ADBController
 from running.window_manager import WindowManager
+from logic.logic_controller import LogicController
 
 
 def main():
@@ -11,9 +12,15 @@ def main():
     if not adb.run():
         return
     
-    # 检查并切换到游戏窗口
-    window_mgr = WindowManager(adb)
-    window_mgr.ensure_game_window()
+    # # 检查并切换到游戏窗口
+    # window_mgr = WindowManager(adb)
+    # window_mgr.ensure_game_window()
+    
+    # 检查并同意条例
+    logic = LogicController(adb)
+    logic.check_and_accept_regulation()
+    
+    print("\n游戏启动流程完成！")
 
 
 if __name__ == "__main__":

@@ -4,5 +4,9 @@
   "mumu_index": 0,
   "connection_timeout": 30,
   "emulator_start_timeout": 90,
-  "emulator_start_check_interval": 3
+  "emulator_start_check_interval": 3,
+  "emulator_resolution": {
+    "width": 1600,
+    "height": 900
+  }
 }
