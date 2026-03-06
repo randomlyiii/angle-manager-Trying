@@ -2,6 +2,8 @@ import subprocess
 import json
 import os
 import time
+import cv2
+import numpy as np
 from pathlib import Path
 
 
@@ -47,18 +49,13 @@ class ADBController:
         device_address = f"127.0.0.1:{port}"
         
         # 检查模拟器是否已经运行
-        cmd = f'"{self.adb_path}" devices'
-        success, stdout, _ = self._execute_command(cmd)
-        
-        if success and device_address in stdout and "device" in stdout:
+        if self._is_emulator_running(device_address):
             print(f"MuMu模拟器已在运行 (端口: {port})")
-            self._hide_mumu_manager()
             return True
         
         print(f"正在启动MuMu模拟器 #{self.mumu_index} (端口: {port})...")
         try:
-            # 使用Popen启动模拟器，传入索引参数
-            # MuMuNxDevice.exe 启动命令格式
+            # 使用Popen启动模拟器
             subprocess.Popen([self.mumu_path], shell=True, 
                            stdout=subprocess.DEVNULL, 
                            stderr=subprocess.DEVNULL)
@@ -73,15 +70,10 @@ class ADBController:
                 time.sleep(wait_interval)
                 elapsed += wait_interval
                 
-                cmd = f'"{self.adb_path}" devices'
-                success, stdout, _ = self._execute_command(cmd)
-                
-                if success and device_address in stdout and "device" in stdout:
+                # 检查模拟器是否已启动
+                if self._is_emulator_running(device_address):
                     print(f"模拟器启动成功！(端口: {port}, 耗时 {elapsed} 秒)")
                     time.sleep(5)  # 额外等待确保完全启动
-                    
-                    # 隐藏管理器窗口到托盘
-                    self._hide_mumu_manager()
                     return True
                 
                 if elapsed % 9 == 0:  # 每9秒显示一次
@@ -94,38 +86,16 @@ class ADBController:
             print(f"启动模拟器失败: {e}")
             return False
     
+    def _is_emulator_running(self, device_address):
+        """检查模拟器是否正在运行"""
+        cmd = f'"{self.adb_path}" devices'
+        success, stdout, _ = self._execute_command(cmd)
+        return success and device_address in stdout and "device" in stdout
+    
     def _hide_mumu_manager(self):
-        """隐藏MuMu管理器窗口到托盘"""
-        try:
-            import win32gui
-            import win32con
-            
-            # 查找MuMu管理器窗口
-            def find_window_callback(hwnd, windows):
-                if win32gui.IsWindowVisible(hwnd):
-                    title = win32gui.GetWindowText(hwnd)
-                    if "MuMu" in title and "模拟器" in title:
-                        windows.append(hwnd)
-                return True
-            
-            windows = []
-            win32gui.EnumWindows(find_window_callback, windows)
-            
-            # 隐藏找到的窗口
-            for hwnd in windows:
-                title = win32gui.GetWindowText(hwnd)
-                # 只隐藏管理器窗口，不隐藏模拟器窗口
-                if "MuMu模拟器" == title or "MuMu" in title:
-                    # 检查是否是管理器窗口（通常管理器窗口标题不包含具体游戏名）
-                    if "12" not in title or len(title) < 15:
-                        win32gui.ShowWindow(hwnd, win32con.SW_HIDE)
-                        print(f"已隐藏窗口: {title}")
-            
-        except ImportError:
-            print("提示: 需要安装 pywin32 才能自动隐藏管理器窗口")
-            print("运行: pip install pywin32")
-        except Exception as e:
-            print(f"隐藏窗口时出错: {e}")
+        """隐藏MuMu管理器窗口到托盘（已禁用）"""
+        # 此功能已禁用，避免误隐藏模拟器窗口
+        pass
     
     def connect(self, device_ip=None):
         """连接设备"""
@@ -194,6 +164,80 @@ class ADBController:
             return width, height
         return None, None
     
+    def screenshot(self, save_path="cache/screenshot.png"):
+        """截取设备屏幕"""
+        # 截图到设备
+        cmd = f'"{self.adb_path}" shell screencap -p /sdcard/screenshot.png'
+        success, _, _ = self._execute_command(cmd)
+        if not success:
+            return None
+        
+        # 拉取到本地
+        cmd = f'"{self.adb_path}" pull /sdcard/screenshot.png {save_path}'
+        success, _, _ = self._execute_command(cmd)
+        if not success:
+            return None
+        
+        return save_path
+    
+    def find_and_click_image(self, template_path, threshold=0.8):
+        """在屏幕上查找图像并点击"""
+        if not os.path.exists(template_path):
+            print(f"错误: 模板图像不存在: {template_path}")
+            return False
+        
+        # 截取当前屏幕
+        screenshot_path = self.screenshot()
+        if not screenshot_path:
+            print("错误: 截图失败")
+            return False
+        
+        # 读取图像
+        screen = cv2.imread(screenshot_path)
+        template = cv2.imread(template_path)
+        
+        if screen is None or template is None:
+            print("错误: 无法读取图像文件")
+            return False
+        
+        # 模板匹配
+        result = cv2.matchTemplate(screen, template, cv2.TM_CCOEFF_NORMED)
+        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+        
+        if max_val >= threshold:
+            # 计算点击位置（模板中心）
+            h, w = template.shape[:2]
+            center_x = max_loc[0] + w // 2
+            center_y = max_loc[1] + h // 2
+            
+            print(f"找到目标图像 (匹配度: {max_val:.2f}), 位置: ({center_x}, {center_y})")
+            
+            # 点击
+            cmd = f'"{self.adb_path}" shell input tap {center_x} {center_y}'
+            success, _, _ = self._execute_command(cmd)
+            return success
+        else:
+            print(f"未找到目标图像 (最高匹配度: {max_val:.2f}, 阈值: {threshold})")
+            return False
+    
+    def launch_game(self, icon_path="resource/template/auto_launch/game_icon.png"):
+        """启动游戏"""
+        print("\n正在启动游戏...")
+        
+        # 确保设备已唤醒
+        self.wake_device()
+        time.sleep(1)
+        
+        # 查找并点击游戏图标
+        if self.find_and_click_image(icon_path):
+            print("✓ 游戏启动成功!")
+            return True
+        else:
+            print("✗ 未找到游戏图标，请检查:")
+            print(f"  - 图标路径是否正确: {icon_path}")
+            print("  - 游戏图标是否在主屏幕上")
+            return False
+    
     def run(self):
         """运行完整的启动和连接流程"""
         print("=" * 50)
@@ -223,4 +267,8 @@ class ADBController:
         print("\n" + "=" * 50)
         print("模拟器已就绪")
         print("=" * 50)
+        
+        # 启动游戏
+        self.launch_game()
+        
         return True

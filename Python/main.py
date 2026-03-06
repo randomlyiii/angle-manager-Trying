@@ -1,11 +1,19 @@
 """ADB模拟器自动连接工具"""
 from adb.adb_controller import ADBController
+from running.window_manager import WindowManager
 
 
 def main():
     """主函数"""
     adb = ADBController()
-    adb.run()
+    
+    # 运行启动流程
+    if not adb.run():
+        return
+    
+    # 检查并切换到游戏窗口
+    window_mgr = WindowManager(adb)
+    window_mgr.ensure_game_window()
 
 
 if __name__ == "__main__":
